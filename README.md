@@ -12,3 +12,10 @@ http://clang.llvm.org/docs/IntroductionToTheClangAST.html  -- Video is pretty go
 
 py-graph-tool
 sudo port install py-graph-tool
+
+Translator needs
+|What|How|Notes|
+|----|---|-----|
+|Arbitrary precision integer and fixed point libraries to minimize bus width|Find variables with size bounded by code (e.g. loop condition variables) | C: ap_[u]intN where N is bit width|
+||||
+||||
