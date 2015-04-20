@@ -1,7 +1,6 @@
 # EncryptedRegexFPGA
 
-Some important links
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
+##Some important links
 
 AutoESL // ViVado HLS Download
 http://www.xilinx.com/tools/autoesl_instructions.htm
@@ -11,10 +10,16 @@ Clang AST
 http://clang.llvm.org/docs/IntroductionToTheClangAST.html  -- Video is pretty good
 
 py-graph-tool
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
 sudo port install py-graph-tool
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+or
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+brew tap homebrew/science
+brew install graph-tool
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Translator needs
+##Translator needs
 
 | What | How (Source)| How (AutoESL)| Why |
 | ---- | ------------| -------------| --- |
