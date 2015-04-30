@@ -1,0 +1,22 @@
+digraph unnamed {
+
+	Node0x7feb52000fd8 [shape=record,label="{CompoundStmt}"];
+	Node0x7feb52000fd8 -> Node0x7feb52000f68;
+	Node0x7feb52000fd8 -> Node0x7feb52000fc0;
+	Node0x7feb52000f68 [shape=record,label="{DeclStmt}"];
+	Node0x7feb52000f68 -> Node0x7feb52000f48;
+	Node0x7feb52000f48 [shape=record,label="{ParenExpr}"];
+	Node0x7feb52000f48 -> Node0x7feb52000f20;
+	Node0x7feb52000f20 [shape=record,label="{BinaryOperator}"];
+	Node0x7feb52000f20 -> Node0x7feb52000f08;
+	Node0x7feb52000f20 -> Node0x7feb52000ee8;
+	Node0x7feb52000f08 [shape=record,label="{ImplicitCastExpr}"];
+	Node0x7feb52000f08 -> Node0x7feb52000ec0;
+	Node0x7feb52000ec0 [shape=record,label="{DeclRefExpr}"];
+	Node0x7feb52000ee8 [shape=record,label="{IntegerLiteral}"];
+	Node0x7feb52000fc0 [shape=record,label="{ReturnStmt}"];
+	Node0x7feb52000fc0 -> Node0x7feb52000fa8;
+	Node0x7feb52000fa8 [shape=record,label="{ImplicitCastExpr}"];
+	Node0x7feb52000fa8 -> Node0x7feb52000f80;
+	Node0x7feb52000f80 [shape=record,label="{DeclRefExpr}"];
+}
