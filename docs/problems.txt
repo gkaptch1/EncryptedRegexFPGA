@@ -1,0 +1,7 @@
+How do you pass the workgroup ID in to each kernel?  Schedule each workgroup seperatly?
+
+OVERARCHINg cHaLangeS  // Tasks
+--------------------------------
+1. Get AutoESL running on naything
+2. Get graph manipulation working
+3. AST parser working
