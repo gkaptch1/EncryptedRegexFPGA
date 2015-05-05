@@ -47,3 +47,7 @@ apt-get
 FrontEnd Action Guide
 ~~~~~~~~~~~~~~~~~~~~~~~~
 http://clang.llvm.org/docs/RAVFrontendAction.html
+
+To get complilation of the tool working, build LLVM/Clang with ninja, place the files in clang/ into llvm/tools/clang/tools/extra/find-class-decls/ then run 
+ $ ninja find-class-decls
+from llvm_build to build the executable
