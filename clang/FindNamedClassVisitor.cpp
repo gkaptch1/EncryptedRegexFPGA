@@ -4,6 +4,8 @@
 #include "clang/Frontend/FrontendAction.h"
 #include "clang/Frontend/FrontendActions.h"
 #include "clang/Tooling/Tooling.h"
+#include "clang/Lex/Preprocessor.h"
+#include <string>
 //#include "clang/Tooling/CommonOptionsParser.h"
 //#include "llvm/Support/CommandLine.h"
 
@@ -59,14 +61,39 @@ public:
 };
 
 class CustomTokenDumperAction : public clang::DumpRawTokensAction {
-public:
+protected:
+  virtual void ExecuteAction() {
+   Preprocessor &PP = getCompilerInstance().getPreprocessor();
+   SourceManager &SM = PP.getSourceManager();
+ 
+   // Start lexing the specified input file.
+   const llvm::MemoryBuffer *FromFile = SM.getBuffer(SM.getMainFileID());
+   Lexer RawLex(SM.getMainFileID(), FromFile, SM, PP.getLangOpts());
+   RawLex.SetKeepWhitespaceMode(true);
+ 
+   Token RawTok;
+   RawLex.LexFromRawLexer(RawTok);
+   while (RawTok.isNot(tok::eof)){
+    std::string spelling = PP.getSpelling(RawTok);
+    //We want to strip out all the global and kernel annotations.  
+     if(spelling.compare(0,8,"__global") == 0 || spelling.compare(0,8,"__kernel") == 0) {
+      //Rips out the space after the annotation
+       RawLex.LexFromRawLexer(RawTok);
+       RawLex.LexFromRawLexer(RawTok);
+       continue;
+     }
+     PP.DumpToken(RawTok, true);
+     llvm::errs() << "\n";
+     RawLex.LexFromRawLexer(RawTok);
+   }
 
-
+   //TODO FIGURE OUT HOW TO PASS THIS TO THE AST PARSER!!
+  }
 };
 
 int main(int argc, char **argv) {
   if (argc > 1) {
-    clang::tooling::runToolOnCode(new DumpRawTokensAction, argv[1]);
+    clang::tooling::runToolOnCode(new CustomTokenDumperAction, argv[1]);
     clang::tooling::runToolOnCode(new FindNamedClassAction, argv[1]);
   }
 }
