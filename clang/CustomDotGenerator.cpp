@@ -362,10 +362,6 @@ public:
 };
 
 int main(int argc, char **argv) {
-    //CommonOptionsParser op(argc, argv);
-    //ClangTool Tool(op.getCompilations(), op.getSourcePathList());
-    //int result = Tool.run(newFrontendActionFactory<CustomTokenDumperAction>());
-    //runToolOnCode(new ASTDumpAction, argv[1]);
-    runToolOnCode(new ASTViewAction, argv[1]);
-    //rewriter.getEditBuffer(rewriter.getSourceMgr().getMainFileID()).write(errs());
+    //TODO make this not shitty and actually read in a file
+    runToolOnCode(new CustomDotGeneratorAction, argv[1]);
 }
