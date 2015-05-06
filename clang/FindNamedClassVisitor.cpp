@@ -2,6 +2,7 @@
 #include "clang/AST/RecursiveASTVisitor.h"
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Frontend/FrontendAction.h"
+#include "clang/Frontend/FrontendActions.h"
 #include "clang/Tooling/Tooling.h"
 //#include "clang/Tooling/CommonOptionsParser.h"
 //#include "llvm/Support/CommandLine.h"
@@ -49,13 +50,23 @@ class FindNamedClassAction : public clang::ASTFrontendAction {
 public:
   virtual std::unique_ptr<clang::ASTConsumer> CreateASTConsumer(
     clang::CompilerInstance &Compiler, llvm::StringRef InFile) {
+
+
+
     return std::unique_ptr<clang::ASTConsumer>(
         new FindNamedClassConsumer(&Compiler.getASTContext()));
   }
 };
 
+class CustomTokenDumperAction : public clang::DumpRawTokensAction {
+public:
+
+
+};
+
 int main(int argc, char **argv) {
   if (argc > 1) {
+    clang::tooling::runToolOnCode(new DumpRawTokensAction, argv[1]);
     clang::tooling::runToolOnCode(new FindNamedClassAction, argv[1]);
   }
 }
