@@ -10,6 +10,20 @@
 //#include "llvm/Support/CommandLine.h"
 
 using namespace clang;
+using namespace clang::tooling;
+
+class NodeIDGenerator {
+private:
+  static int id;
+
+public:
+  static int getNextID() 
+  {
+    return id++;
+  }
+};
+
+int NodeIDGenerator::id = 1000;
 
 class FindNamedClassVisitor
   : public RecursiveASTVisitor<FindNamedClassVisitor> {
@@ -26,6 +40,9 @@ public:
     llvm::outs() << "Attr Name: " << Attribute->getSpelling() << "\n";
     return true;
   }
+
+//  bool VisitStmt( Stmt *Statment ) {
+  //}
 
   bool VisitType( Type *T) {
     llvm::outs() << "Type Name: " << T->getTypeClassName() << "\n";
@@ -48,21 +65,21 @@ private:
   FindNamedClassVisitor Visitor;
 };
 
+
 class FindNamedClassAction : public clang::ASTFrontendAction {
 public:
   virtual std::unique_ptr<clang::ASTConsumer> CreateASTConsumer(
     clang::CompilerInstance &Compiler, llvm::StringRef InFile) {
-
-
 
     return std::unique_ptr<clang::ASTConsumer>(
         new FindNamedClassConsumer(&Compiler.getASTContext()));
   }
 };
 
-class CustomTokenDumperAction : public clang::DumpRawTokensAction {
+class CustomTokenDumperAction : public clang::PreprocessorFrontendAction {
 protected:
   virtual void ExecuteAction() {
+   //CompilerInstance &CI = getCompilerInstance();
    Preprocessor &PP = getCompilerInstance().getPreprocessor();
    SourceManager &SM = PP.getSourceManager();
  
@@ -82,18 +99,30 @@ protected:
        RawLex.LexFromRawLexer(RawTok);
        continue;
      }
-     PP.DumpToken(RawTok, true);
-     llvm::errs() << "\n";
+     //PP.DumpToken(RawTok, true);
+     llvm::errs() << spelling;
+     //llvm::errs() << "\n";
      RawLex.LexFromRawLexer(RawTok);
    }
 
-   //TODO FIGURE OUT HOW TO PASS THIS TO THE AST PARSER!!
+   //TODO FIGURE OUT HOW TO PASS THIS TO THE AST PARSER!! 
+   /*
+   raw_ostream *OS = CI.createDefaultOutputFile(false, getCurrentFile());
+   if (!OS) return;
+ 
+   DoPrintPreprocessedInput(CI.getPreprocessor(), OS,
+                            CI.getPreprocessorOutputOpts());
+                            */
   }
 };
 
+//Rewriter rewriter;
+
 int main(int argc, char **argv) {
-  if (argc > 1) {
-    clang::tooling::runToolOnCode(new CustomTokenDumperAction, argv[1]);
-    clang::tooling::runToolOnCode(new FindNamedClassAction, argv[1]);
-  }
+    //CommonOptionsParser op(argc, argv);
+    //ClangTool Tool(op.getCompilations(), op.getSourcePathList());
+    //int result = Tool.run(newFrontendActionFactory<CustomTokenDumperAction>());
+    //runToolOnCode(new ASTDumpAction, argv[1]);
+    runToolOnCode(new ASTViewAction, argv[1]);
+    //rewriter.getEditBuffer(rewriter.getSourceMgr().getMainFileID()).write(errs());
 }
