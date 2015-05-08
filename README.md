@@ -51,3 +51,6 @@ http://clang.llvm.org/docs/RAVFrontendAction.html
 To get complilation of the tool working, build LLVM/Clang with ninja, place the files in clang/ into llvm/tools/clang/tools/extra/find-class-decls/ then run 
  $ ninja find-class-decls
 from llvm_build to build the executable
+
+
+./bin/custom-dot-gen 'int get_global_id(int a); void VectorAdd( const long * a, const long * b, long * c,int iNumElements) { int tGID = get_global_id(0); if ( tGID < iNumElements ) { c[tGID] = a[tGID] + b[tGID];}}'
