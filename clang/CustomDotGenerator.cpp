@@ -11,6 +11,7 @@
 using namespace clang;
 using namespace clang::tooling;
 
+//Class used to generate the node ID's for the dot file.
 class NodeIDGenerator {
 private:
   static int id;
@@ -22,6 +23,7 @@ public:
   }
 };
 
+//First node ID is 1000
 int NodeIDGenerator::id = 1000;
 
 class CustomDotGeneratorVisitor 
@@ -60,10 +62,11 @@ public:
         if (node_map.find(GetNodeName(*p)) == node_map.end()) {
           InsertNode(*p);
         }
-        // TODO output to the digraph NodeME -> NodeThis
+        // TODO make sure we connect the function to the rest of the subgraph
         llvm::errs() << GetNodeId(Decloration) << "->" << GetNodeId(*p) << ";\n";
       }
     } else {
+      // Mostly for debug purposes.  Making sure we didnt miss anything...
       llvm::errs() << "Visiting an unhandled Decl " << Decloration->getDeclKindName() << "\n";
     }
     return true;
@@ -169,6 +172,7 @@ private:
     if (full_loc.isValid()) {
       return "Decl:" + std::to_string(full_loc.getSpellingLineNumber()) + ":" + std::to_string(full_loc.getSpellingColumnNumber());
     }
+    //For some reason we need this because the valid check fails on the first try
     return "Decl l:c";
   }
 
@@ -177,8 +181,11 @@ private:
     if (full_loc.isValid()) {
       return "Stmt:" + std::to_string(full_loc.getSpellingLineNumber()) + ":" + std::to_string(full_loc.getSpellingColumnNumber());
     }
+    //For some reason we need this because the valid check fails on the first try
     return "Stmt l:c";
   }
+
+  // ------------------------  The rest of the class in helped methods defining the strings we want to ouput into the dot file.
 
   //------------------------ For Decls
 
@@ -189,7 +196,8 @@ private:
   }
 
   std::string getFunctionDeclNodeString(const FunctionDecl *FD) {
-    return "[ shape=record , label=\"FucntionDecl\" , name = \"" + FD->getQualifiedNameAsString() + "\" , type = \"RETURNTYPE\"];";
+    std::string name = FD->getQualifiedNameAsString();
+    return "[ shape=record , label=\"FucntionDecl\" , name = \"" + name + "\" , type = \"RETURNTYPE\"];";
   }
 
   std::string getVarDeclNodeString(const VarDecl *VD) {
@@ -248,14 +256,6 @@ ASTContext *Context;
 public:
   explicit CustomDotGeneratorConsumer(ASTContext *Context)
     : Visitor(Context) {}
-
-  /*bool HandleTopLevelDecl(DeclGroupRef D) override {
-    for (DeclGroupRef::iterator I = D.begin(), E = D.end(); I != E; ++I)
-      HandleTopLevelSingleDecl(*I);
-    return true;
-  }*/
-
-  //void HandleTopLevelSingleDecl(Decl *D);
 
   virtual void HandleTranslationUnit(clang::ASTContext &Context) {
     Visitor.TraverseDecl(Context.getTranslationUnitDecl());
