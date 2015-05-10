@@ -79,6 +79,12 @@ public:
     } else if (isa<BinaryOperator>(Statment)) {
       const BinaryOperator *BO = dyn_cast_or_null<BinaryOperator>(Statment);
       llvm::errs() << GetNodeId(Statment) << " " << getBinaryOperatorNodeString(BO) << "\n";
+    } else if (isa<IfStmt>(Statment)) {
+      const IfStmt *IS = dyn_cast_or_null<IfStmt>(Statment);
+      llvm::errs() << GetNodeId(Statment) << " " << getIfStmtNodeString(IS) << "\n";
+    } else if (isa<CompoundStmt>(Statment)) {
+      const CompoundStmt *CS = dyn_cast_or_null<CompoundStmt>(Statment);
+      llvm::errs() << GetNodeId(Statment) << " " << getCompoundStmtNodeString(CS) << "\n";
     }
     else {
       llvm::errs() << Statment->getStmtClassName() << "\n";
@@ -163,29 +169,37 @@ private:
   std::string getParmVarDeclNodeString(const ParmVarDecl *PVD) {
     std::string name = PVD->getDeclName().getAsString();
     std::string type = PVD->getType().getAsString();
-    return "[ shape=record , label=\"ParmVarDecl\" , name = \"" + name + "\" , type = \"" + type + "\"]";
+    return "[ shape=record , label=\"ParmVarDecl\" , name = \"" + name + "\" , type = \"" + type + "\"];";
   }
 
   std::string getFunctionDeclNodeString(const FunctionDecl *FD) {
-    return "[ shape=record , label=\"FucntionDecl\" , name = \"" + FD->getQualifiedNameAsString() + "\" , type = \"ReturnType\"]";
+    return "[ shape=record , label=\"FucntionDecl\" , name = \"" + FD->getQualifiedNameAsString() + "\" , type = \"ReturnType\"];";
   }
 
   std::string getVarDeclNodeString(const VarDecl *VD) {
     std::string name = VD->getDeclName().getAsString();
     std::string type = VD->getType().getAsString();
-    return "[ shape=record , label=\"VarDecl\" , name = \"" + name + "\" , type = \"" + type + "\"]";
+    return "[ shape=record , label=\"VarDecl\" , name = \"" + name + "\" , type = \"" + type + "\"];";
   }
 
   //--------------------------- For Statments 
 
   std::string getIntegerLiteralNodeString(const IntegerLiteral *IL) {
     std::string value = std::to_string((IL->getValue()).bitsToDouble());
-    return "[ shape=record , label=\"IntegerLiteral\" value = \"" + value + "\"]";
+    return "[ shape=record , label=\"IntegerLiteral\" , value = \"" + value + "\"];";
   }
 
   std::string getBinaryOperatorNodeString(const BinaryOperator *BO) {
     std::string value = BO->getOpcodeStr();
-    return "[ shape=record , label=\"BinaryOperator\" value = \"" + value + "\"]";
+    return "[ shape=record , label=\"BinaryOperator\" , value = \"" + value + "\"];";
+  }
+
+  std::string getCompoundStmtNodeString(const CompoundStmt *CS) {
+    return "[ shape=record , label=\"CompoundStmt\" ];";
+  }
+
+  std::string getIfStmtNodeString(const IfStmt *IS) {
+    return "[ shape=record , label=\"IfStmt\" ];";
   }
 };
 
@@ -223,28 +237,6 @@ public:
   }
 };
 
-/*
-void CustomDotGeneratorConsumer::HandleTopLevelSingleDecl(Decl *D) {
-	//TODO Limits the things we are actually priniting to methods and functions...
-  D->print(llvm::errs());
-  llvm::errs() << '\n';
-
-  if (isa<FunctionDecl>(D) || isa<ObjCMethodDecl>(D)) {
-    if (Stmt *Body = D->getBody()) {
-      llvm::errs() << '\n';
-      Body->viewAST();
-      llvm::errs() << '\n';
-    } else {
-
-    }
-  }
-}
-*/
-/*
-std::unique_ptr<ASTConsumer> clang::CreateDeclContextPrinter() {
-  return llvm::make_unique<DeclContextPrinter>();
-}
-*/
 
 int main(int argc, char **argv) {
     //TODO make this not shitty and actually read in a file
