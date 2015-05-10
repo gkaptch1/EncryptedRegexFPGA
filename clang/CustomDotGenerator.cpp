@@ -28,6 +28,8 @@ public:
       ArrayRef<ParmVarDecl * > params = FD->parameters();
       for(auto p = params.begin(); p != params.end(); ++p) {
         llvm::errs() << "\t" << (*p)->getDeclName() << "\n";
+        llvm::errs() << "\t\t" << ((*p)->getType()).getAsString() << "\n";
+        llvm::errs() << "\t\t\tLine: " << (Context->getFullLoc(((*p)->getOuterLocStart()))).getExpansionLineNumber() << " Col: " << (Context->getFullLoc(((*p)->getOuterLocStart()))).getExpansionColumnNumber() << "\n";
       }
       /*
       for(FunctionDecl::param_const_range Ittr = FD->params(); Ittr; ++Ittr) 
