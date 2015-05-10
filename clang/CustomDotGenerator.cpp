@@ -49,7 +49,7 @@ public:
       llvm::errs() << GetNodeId(Decloration) << " " << getVarDeclNodeString(VD) << "\n";
     }
     //Functions point downward in the digraph to a bunch of nodes.  We itterate through them and draw the connections
-    if(isa<FunctionDecl>(Decloration)) {
+    else if(isa<FunctionDecl>(Decloration)) {
       const FunctionDecl *FD = dyn_cast_or_null<FunctionDecl>(Decloration);
       llvm::errs() << GetNodeId(Decloration) << " " <<  getFunctionDeclNodeString(FD) << "\n";
       // Gater the params as an ArrayRef
@@ -63,6 +63,8 @@ public:
         // TODO output to the digraph NodeME -> NodeThis
         llvm::errs() << GetNodeId(Decloration) << "->" << GetNodeId(*p) << "\n";
       }
+    } else {
+      llvm::errs() << "Visiting an unhandled Decl " << Decloration->getDeclKindName() << "\n";
     }
     return true;
   }
@@ -72,7 +74,8 @@ public:
     if (node_map.find(GetNodeName(Statment)) == node_map.end()) {
       InsertNode(Statment);
     }
-    //Handle the case where this is a Integer iteral
+    //Handle all the various possible statment strings we might need
+    // Each block casts the stamtnet to that type then hands off the string building to a helper method defined below
     if( isa<IntegerLiteral>(Statment) ) {
       const IntegerLiteral *IL = dyn_cast_or_null<IntegerLiteral>(Statment);
       llvm::errs() << GetNodeId(Statment) << " " << getIntegerLiteralNodeString(IL) << "\n";
@@ -85,6 +88,12 @@ public:
     } else if (isa<CompoundStmt>(Statment)) {
       const CompoundStmt *CS = dyn_cast_or_null<CompoundStmt>(Statment);
       llvm::errs() << GetNodeId(Statment) << " " << getCompoundStmtNodeString(CS) << "\n";
+    } else if (isa<DeclStmt>(Statment)) {
+      const DeclStmt *DS = dyn_cast_or_null<DeclStmt>(Statment);
+      llvm::errs() << GetNodeId(Statment) << " " << getDeclStmtNodeString(DS) << "\n";
+    } else if (isa<DeclRefExpr>(Statment)) {
+      const DeclRefExpr *DRE = dyn_cast_or_null<DeclRefExpr>(Statment);
+      llvm::errs() << GetNodeId(Statment) << " " << getDeclRefExprNodeString(DRE) << "\n";
     }
     else {
       llvm::errs() << Statment->getStmtClassName() << "\n";
@@ -201,6 +210,16 @@ private:
   std::string getIfStmtNodeString(const IfStmt *IS) {
     return "[ shape=record , label=\"IfStmt\" ];";
   }
+
+  std::string getDeclStmtNodeString(const DeclStmt *DS) {
+    return "[ shape=record , label=\"DeclStmt\" ];";
+  }
+
+  std::string getDeclRefExprNodeString(const DeclRefExpr *DRE) {
+    std::string name = (DRE->getNameInfo()).getAsString();
+    return "[ shape=record , label=\"DeclRefExpr\" , name = \"" + name + "\"];";  
+  }
+
 };
 
 class CustomDotGeneratorConsumer : public ASTConsumer {
