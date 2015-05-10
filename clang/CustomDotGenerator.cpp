@@ -23,13 +23,17 @@ public:
       llvm::errs() << PVD->getDeclKindName() << " is " << PVD->getDeclName() << ". \n";
 
     }
+    else if(isa<VarDecl>(Decloration)) {
+        llvm::errs() << "I Found something that is different\n";
+    }
     if(isa<FunctionDecl>(Decloration)) {
       const FunctionDecl *FD = dyn_cast_or_null<FunctionDecl>(Decloration);
       ArrayRef<ParmVarDecl * > params = FD->parameters();
       for(auto p = params.begin(); p != params.end(); ++p) {
         llvm::errs() << "\t" << (*p)->getDeclName() << "\n";
         llvm::errs() << "\t\t" << ((*p)->getType()).getAsString() << "\n";
-        llvm::errs() << "\t\t\tLine: " << (Context->getFullLoc(((*p)->getOuterLocStart()))).getExpansionLineNumber() << " Col: " << (Context->getFullLoc(((*p)->getOuterLocStart()))).getExpansionColumnNumber() << "\n";
+        llvm::errs() << "\t\t\tLine: " << (Context->getFullLoc(((*p)->getOuterLocStart()))).getExpansionLineNumber() 
+          << " Col: " << (Context->getFullLoc(((*p)->getOuterLocStart()))).getExpansionColumnNumber() << "\n";
       }
       /*
       for(FunctionDecl::param_const_range Ittr = FD->params(); Ittr; ++Ittr) 
@@ -42,16 +46,18 @@ public:
 
   bool VisitStmt(Stmt *Statment) {
     //Print out all of my children with a tab
-    llvm::outs() << Statment->getStmtClassName() << "\n";
+    llvm::errs() << Statment->getStmtClassName() << "\n";
     for (Stmt::child_range I = Statment->children(); I; ++I)
       if (*I)
-        llvm::outs() << "\t" << I->getStmtClassName() << "\n";
-  }
-
-  bool VisitNamedDecl( NamedDecl *Declaration) {
-    llvm::outs() << "Decl Name: " << Declaration->getQualifiedNameAsString() << "\n";
+        llvm::errs() << "\t" << I->getStmtClassName() << "\n";
     return true;
   }
+
+  bool VisitDeclStmt(DeclStmt *DeclStatment) {
+    llvm::errs() << "I Found a DeclStmt!\n";
+    return true;
+  }
+
 
   //bool TransverseDecl(Decl *Decloration) {return true;}
 
