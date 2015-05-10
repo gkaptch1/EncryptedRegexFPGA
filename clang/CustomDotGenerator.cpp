@@ -61,7 +61,7 @@ public:
           InsertNode(*p);
         }
         // TODO output to the digraph NodeME -> NodeThis
-        llvm::errs() << GetNodeId(Decloration) << "->" << GetNodeId(*p) << "\n";
+        llvm::errs() << GetNodeId(Decloration) << "->" << GetNodeId(*p) << ";\n";
       }
     } else {
       llvm::errs() << "Visiting an unhandled Decl " << Decloration->getDeclKindName() << "\n";
@@ -94,6 +94,16 @@ public:
     } else if (isa<DeclRefExpr>(Statment)) {
       const DeclRefExpr *DRE = dyn_cast_or_null<DeclRefExpr>(Statment);
       llvm::errs() << GetNodeId(Statment) << " " << getDeclRefExprNodeString(DRE) << "\n";
+    } else if (isa<CallExpr>(Statment)) {
+      const CallExpr *CE = dyn_cast_or_null<CallExpr>(Statment);
+      llvm::errs() << GetNodeId(Statment) << " " << getCallExprNodeString(CE) << "\n";
+    } else if (isa<ImplicitCastExpr>(Statment)) {
+      const ImplicitCastExpr *ICE = dyn_cast_or_null<ImplicitCastExpr>(Statment);
+      //Commented out beacuse the masters thesis doesnt seems to do anything with this?  Not sure why
+      //llvm::errs() << GetNodeId(Statment) << " " << getImplicitCastExprNodeString(ICE) << "\n";
+    } else if (isa<ArraySubscriptExpr>(Statment)) {
+      const ArraySubscriptExpr *ACE = dyn_cast_or_null<ArraySubscriptExpr>(Statment);
+      llvm::errs() << GetNodeId(Statment) << " " << getArraySubscriptExprNodeString(ACE) << "\n";
     }
     else {
       llvm::errs() << Statment->getStmtClassName() << "\n";
@@ -104,15 +114,12 @@ public:
         if (node_map.find(GetNodeName(*I)) == node_map.end()) {
           InsertNode(*I);
         }
-        llvm::errs() << "\t" << I->getStmtClassName() << "\n";
-        llvm::errs() << GetNodeId(Statment) << "->" << GetNodeId(*I) << "\n";
+        //llvm::errs() << "\t" << I->getStmtClassName() << "\n";
+        if (GetNodeId(Statment) != GetNodeId(*I)) {
+          llvm::errs() << GetNodeId(Statment) << "->" << GetNodeId(*I) << ";\n";
+        }
       }
     }
-    return true;
-  }
-
-  bool VisitDeclStmt(DeclStmt *DeclStatment) {
-    llvm::errs() << "I Found a DeclStmt!\n";
     return true;
   }
 
@@ -132,7 +139,7 @@ private:
     int node_id = NodeIDGenerator::getNextID();
     //Insert into the map
     node_map.insert(std::make_pair<std::string,double>(GetNodeName(Decloration),node_id));
-    llvm::errs() << "\t INSERTING NODE " << GetNodeName(Decloration) << " NODE" << std::to_string(node_id) << "\n";
+    //llvm::errs() << "\t INSERTING NODE " << GetNodeName(Decloration) << " NODE" << std::to_string(node_id) << "\n";
     return "Node" + std::to_string(node_id);
   }
 
@@ -143,7 +150,7 @@ private:
     }
     int node_id = NodeIDGenerator::getNextID();
     node_map.insert(std::make_pair<std::string,double>(GetNodeName(Statment),node_id));
-    llvm::errs() << "\t INSERTING NODE " << GetNodeName(Statment) << " NODE" << std::to_string(node_id) << "\n";
+    //llvm::errs() << "\t INSERTING NODE " << GetNodeName(Statment) << " NODE" << std::to_string(node_id) << "\n";
     return "Node" + std::to_string(node_id);
   }
 
@@ -182,19 +189,20 @@ private:
   }
 
   std::string getFunctionDeclNodeString(const FunctionDecl *FD) {
-    return "[ shape=record , label=\"FucntionDecl\" , name = \"" + FD->getQualifiedNameAsString() + "\" , type = \"ReturnType\"];";
+    return "[ shape=record , label=\"FucntionDecl\" , name = \"" + FD->getQualifiedNameAsString() + "\" , type = \"RETURNTYPE\"];";
   }
 
   std::string getVarDeclNodeString(const VarDecl *VD) {
     std::string name = VD->getDeclName().getAsString();
     std::string type = VD->getType().getAsString();
-    return "[ shape=record , label=\"VarDecl\" , name = \"" + name + "\" , type = \"" + type + "\"];";
+    //std::string value = std::to_string(VD->evaluateValue());
+    return "[ shape=record , label=\"VarDecl\" , name = \"" + name + "\" , type = \"" + type + "\" , value = \"VALUE\" ];";
   }
 
   //--------------------------- For Statments 
 
   std::string getIntegerLiteralNodeString(const IntegerLiteral *IL) {
-    std::string value = std::to_string((IL->getValue()).bitsToDouble());
+    std::string value = std::to_string( (int) (IL->getValue()).bitsToDouble());
     return "[ shape=record , label=\"IntegerLiteral\" , value = \"" + value + "\"];";
   }
 
@@ -218,6 +226,19 @@ private:
   std::string getDeclRefExprNodeString(const DeclRefExpr *DRE) {
     std::string name = (DRE->getNameInfo()).getAsString();
     return "[ shape=record , label=\"DeclRefExpr\" , name = \"" + name + "\"];";  
+  }
+
+  std::string getCallExprNodeString(const CallExpr *CE) {
+    return "[ shape=record , label=\"CallExpr\" ];";
+  }
+
+  std::string getImplicitCastExprNodeString(const ImplicitCastExpr *ICE) {
+    //Not sure why this is nothing...
+    return "";
+  }
+
+  std::string getArraySubscriptExprNodeString(const ArraySubscriptExpr *ACE) {
+    return "[ shape=record , label=\"ArraySubscriptExpr\" ];";
   }
 
 };
@@ -259,5 +280,7 @@ public:
 
 int main(int argc, char **argv) {
     //TODO make this not shitty and actually read in a file
+    llvm::errs() << "digraph unnamed { \n";
     runToolOnCode(new CustomDotGeneratorAction, argv[1]);
+    llvm::errs() << "}\n";
 }
