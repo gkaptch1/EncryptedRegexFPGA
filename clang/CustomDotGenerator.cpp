@@ -6,9 +6,23 @@
 #include "clang/Tooling/Tooling.h"
 #include "clang/Lex/Preprocessor.h"
 #include <string>
+#include <unordered_map>
 
 using namespace clang;
 using namespace clang::tooling;
+
+class NodeIDGenerator {
+private:
+  static int id;
+
+public:
+  static int getNextID() 
+  {
+    return id++;
+  }
+};
+
+int NodeIDGenerator::id = 1000;
 
 class CustomDotGeneratorVisitor 
   : public RecursiveASTVisitor<CustomDotGeneratorVisitor> {
@@ -17,39 +31,68 @@ public:
     : Context(Context) {}
 
   bool VisitDecl(Decl *Decloration) {
-    llvm::errs() << "Visiting a Decl " << Decloration->getDeclKindName() << "\n";
+
+    //If we are visiting something that somehow isnt in the digraph yet, we insert it
+    if (node_map.find(GetNodeName(Decloration)) == node_map.end()) {
+      InsertNode(Decloration);
+    }
+    //llvm::errs() << "Visiting a Decl " << Decloration->getDeclKindName() << "\n";
+    //If it is a Parameter Object, we handle its output
     if(isa<ParmVarDecl>(Decloration)) {
       const ParmVarDecl *PVD = dyn_cast_or_null<ParmVarDecl>(Decloration);
-      llvm::errs() << PVD->getDeclKindName() << " is " << PVD->getDeclName() << ". \n";
+      llvm::errs() << GetNodeId(Decloration) << " " << getParmVarDeclNodeString(PVD) << "\n";
 
     }
+    //if it s just a variable decl that isnt a parameter...
     else if(isa<VarDecl>(Decloration)) {
-        llvm::errs() << "I Found something that is different\n";
+      const VarDecl *VD = dyn_cast_or_null<VarDecl>(Decloration);
+      llvm::errs() << GetNodeId(Decloration) << " " << getVarDeclNodeString(VD) << "\n";
     }
+    //Functions point downward in the digraph to a bunch of nodes.  We itterate through them and draw the connections
     if(isa<FunctionDecl>(Decloration)) {
       const FunctionDecl *FD = dyn_cast_or_null<FunctionDecl>(Decloration);
+      llvm::errs() << GetNodeId(Decloration) << " " <<  getFunctionDeclNodeString(FD) << "\n";
+      // Gater the params as an ArrayRef
       ArrayRef<ParmVarDecl * > params = FD->parameters();
+      //Itterating through...
       for(auto p = params.begin(); p != params.end(); ++p) {
-        llvm::errs() << "\t" << (*p)->getDeclName() << "\n";
-        llvm::errs() << "\t\t" << ((*p)->getType()).getAsString() << "\n";
-        llvm::errs() << "\t\t\tLine: " << (Context->getFullLoc(((*p)->getOuterLocStart()))).getExpansionLineNumber() 
-          << " Col: " << (Context->getFullLoc(((*p)->getOuterLocStart()))).getExpansionColumnNumber() << "\n";
+        //Insert the node if it doesnt exist yet.
+        if (node_map.find(GetNodeName(*p)) == node_map.end()) {
+          InsertNode(*p);
+        }
+        // TODO output to the digraph NodeME -> NodeThis
+        llvm::errs() << GetNodeId(Decloration) << "->" << GetNodeId(*p) << "\n";
       }
-      /*
-      for(FunctionDecl::param_const_range Ittr = FD->params(); Ittr; ++Ittr) 
-        if(*Ittr)
-          llvm::outs() << "\t" << Ittr->getDeclName();
-          */
     }
     return true;
   }
 
   bool VisitStmt(Stmt *Statment) {
-    //Print out all of my children with a tab
-    llvm::errs() << Statment->getStmtClassName() << "\n";
-    for (Stmt::child_range I = Statment->children(); I; ++I)
-      if (*I)
+    //Insert the node into the map if it has yet to happen
+    if (node_map.find(GetNodeName(Statment)) == node_map.end()) {
+      InsertNode(Statment);
+    }
+    //Handle the case where this is a Integer iteral
+    if( isa<IntegerLiteral>(Statment) ) {
+      const IntegerLiteral *IL = dyn_cast_or_null<IntegerLiteral>(Statment);
+      llvm::errs() << GetNodeId(Statment) << " " << getIntegerLiteralNodeString(IL) << "\n";
+    } else if (isa<BinaryOperator>(Statment)) {
+      const BinaryOperator *BO = dyn_cast_or_null<BinaryOperator>(Statment);
+      llvm::errs() << GetNodeId(Statment) << " " << getBinaryOperatorNodeString(BO) << "\n";
+    }
+    else {
+      llvm::errs() << Statment->getStmtClassName() << "\n";
+    }
+    // Itterating through all of my children, and drawing the connections
+    for (Stmt::child_range I = Statment->children(); I; ++I) {
+      if (*I) {
+        if (node_map.find(GetNodeName(*I)) == node_map.end()) {
+          InsertNode(*I);
+        }
         llvm::errs() << "\t" << I->getStmtClassName() << "\n";
+        llvm::errs() << GetNodeId(Statment) << "->" << GetNodeId(*I) << "\n";
+      }
+    }
     return true;
   }
 
@@ -58,11 +101,92 @@ public:
     return true;
   }
 
-
-  //bool TransverseDecl(Decl *Decloration) {return true;}
-
 private:
   ASTContext *Context;
+  //Map of unique IDS to the node ID's to be used in the dot file
+  std::unordered_map<std::string,int> node_map = std::unordered_map<std::string, int>();
+
+  // --------------------------- For Map Manipulations. Functions can either take Stmts or Decls
+
+  std::string InsertNode(Decl *Decloration) {
+    //If the node already has an ID in the map, we simply return the value
+    if( node_map.find(GetNodeName(Decloration)) != node_map.end()) {
+      return "Node" + std::to_string(node_map.at(GetNodeName(Decloration)));
+    }
+    //Generate next Id
+    int node_id = NodeIDGenerator::getNextID();
+    //Insert into the map
+    node_map.insert(std::make_pair<std::string,double>(GetNodeName(Decloration),node_id));
+    llvm::errs() << "\t INSERTING NODE " << GetNodeName(Decloration) << " NODE" << std::to_string(node_id) << "\n";
+    return "Node" + std::to_string(node_id);
+  }
+
+  //We duplicate the above method from Statments
+  std::string InsertNode(Stmt *Statment) {
+    if( node_map.find(GetNodeName(Statment)) != node_map.end()) {
+      return "Node" + std::to_string(node_map.at(GetNodeName(Statment)));
+    }
+    int node_id = NodeIDGenerator::getNextID();
+    node_map.insert(std::make_pair<std::string,double>(GetNodeName(Statment),node_id));
+    llvm::errs() << "\t INSERTING NODE " << GetNodeName(Statment) << " NODE" << std::to_string(node_id) << "\n";
+    return "Node" + std::to_string(node_id);
+  }
+
+  //Wrapper function for readability.  Logic implemented above
+  std::string GetNodeId(Decl *Decloration) {
+    return InsertNode(Decloration);
+  }
+
+  //Wrapper function for readability.  Logic implemented above
+  std::string GetNodeId(Stmt *Statment) {
+    return InsertNode(Statment);
+  }
+
+  std::string GetNodeName(Decl *Decloration) {
+    FullSourceLoc full_loc = Context->getFullLoc((Decloration)->getLocStart());
+    if (full_loc.isValid()) {
+      return "Decl:" + std::to_string(full_loc.getSpellingLineNumber()) + ":" + std::to_string(full_loc.getSpellingColumnNumber());
+    }
+    return "Decl l:c";
+  }
+
+  std::string GetNodeName(Stmt *Statment) {
+    FullSourceLoc full_loc = Context->getFullLoc((Statment)->getLocStart());
+    if (full_loc.isValid()) {
+      return "Stmt:" + std::to_string(full_loc.getSpellingLineNumber()) + ":" + std::to_string(full_loc.getSpellingColumnNumber());
+    }
+    return "Stmt l:c";
+  }
+
+  //------------------------ For Decls
+
+  std::string getParmVarDeclNodeString(const ParmVarDecl *PVD) {
+    std::string name = PVD->getDeclName().getAsString();
+    std::string type = PVD->getType().getAsString();
+    return "[ shape=record , label=\"ParmVarDecl\" , name = \"" + name + "\" , type = \"" + type + "\"]";
+  }
+
+  std::string getFunctionDeclNodeString(const FunctionDecl *FD) {
+    return "[ shape=record , label=\"FucntionDecl\" , name = \"" + FD->getQualifiedNameAsString() + "\" , type = \"ReturnType\"]";
+  }
+
+  std::string getVarDeclNodeString(const VarDecl *VD) {
+    std::string name = VD->getDeclName().getAsString();
+    std::string type = VD->getType().getAsString();
+    return "[ shape=record , label=\"VarDecl\" , name = \"" + name + "\" , type = \"" + type + "\"]";
+  }
+
+  //--------------------------- For Statments 
+
+  std::string getIntegerLiteralNodeString(const IntegerLiteral *IL) {
+    std::string value = std::to_string((IL->getValue()).bitsToDouble());
+    return "[ shape=record , label=\"IntegerLiteral\" value = \"" + value + "\"]";
+  }
+
+  std::string getBinaryOperatorNodeString(const BinaryOperator *BO) {
+    std::string value = BO->getOpcodeStr();
+    return "[ shape=record , label=\"BinaryOperator\" value = \"" + value + "\"]";
+  }
 };
 
 class CustomDotGeneratorConsumer : public ASTConsumer {
