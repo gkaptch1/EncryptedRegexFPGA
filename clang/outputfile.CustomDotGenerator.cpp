@@ -23,24 +23,59 @@
 
 #include <string>
 #include <unordered_map>
+//#include <iostream>
+//#include <fstream>
 
 using namespace clang;
 using namespace clang::tooling;
 
 //Class used to generate the node ID's for the dot file.
 class NodeIDGenerator {
-private:
-  static int id;
-
 public:
   static int getNextID() 
   {
     return id++;
   }
+
+private:
+  static int id;
 };
 
 //First node ID is 1000
 int NodeIDGenerator::id = 1000;
+
+class DotFileWriter {
+public:
+  static bool OpenFile(std::string file_name) {
+    if (file_open) {
+      return false;
+    }
+   // output_file.open(file_name);
+    return true;
+  }
+
+  static bool WriteToFile(std::string to_wrtie) {
+    if (!file_open) {
+      return false;
+    }
+  //  output_file << to_wrtie;
+    return true;
+  }
+
+  static bool CloseFile() {
+    if (!file_open) {
+      return false;
+    }
+//    output_file.close();
+    return true;
+  }
+private:
+  static bool file_open;
+//  static std::ofstream output_file;
+
+};
+
+// bool DotFileWriter::file_open = false;
 
 class CustomDotGeneratorVisitor 
   : public RecursiveASTVisitor<CustomDotGeneratorVisitor> {
@@ -57,18 +92,18 @@ public:
     //If it is a Parameter Object, we handle its output
     if(isa<ParmVarDecl>(Decloration)) {
       const ParmVarDecl *PVD = dyn_cast_or_null<ParmVarDecl>(Decloration);
-      llvm::outs() << GetNodeId(Decloration) << " " << getParmVarDeclNodeString(PVD) << "\n";
+      DotFileWriter::WriteToFile(GetNodeId(Decloration) + " " + getParmVarDeclNodeString(PVD) + "\n");
 
     }
     //if it s just a variable decl that isnt a parameter...
     else if(isa<VarDecl>(Decloration)) {
       const VarDecl *VD = dyn_cast_or_null<VarDecl>(Decloration);
-      llvm::outs() << GetNodeId(Decloration) << " " << getVarDeclNodeString(VD) << "\n";
+      DotFileWriter::WriteToFile(GetNodeId(Decloration) + " " + getVarDeclNodeString(VD) + "\n");
     }
     //Functions point downward in the digraph to a bunch of nodes.  We itterate through them and draw the connections
     else if(isa<FunctionDecl>(Decloration)) {
       const FunctionDecl *FD = dyn_cast_or_null<FunctionDecl>(Decloration);
-      llvm::outs() << GetNodeId(Decloration) << " " <<  getFunctionDeclNodeString(FD) << "\n";
+      DotFileWriter::WriteToFile(GetNodeId(Decloration) + " " +  getFunctionDeclNodeString(FD) + "\n");
       // Gater the params as an ArrayRef
       ArrayRef<ParmVarDecl * > params = FD->parameters();
       //Itterating through...
@@ -77,14 +112,13 @@ public:
         if (node_map.find(GetNodeName(*p)) == node_map.end()) {
           InsertNode(*p);
         }
-        // TODO make sure we connect the function to the rest of the subgraph
-        llvm::outs() << GetNodeId(Decloration) << "->" << GetNodeId(*p) << ";\n";
+        DotFileWriter::WriteToFile(GetNodeId(Decloration) + "->" + GetNodeId(*p) + ";\n");
       }
       //Get the top level stmt node in the function body
       if(FD->hasBody()) {
         Stmt *Body = FD->getBody();
         InsertNode(Body); 
-        llvm::outs() << GetNodeId(Decloration) << "->" << GetNodeId(Body) << ";\n";
+        DotFileWriter::WriteToFile(GetNodeId(Decloration) + "->" + GetNodeId(Body) + ";\n");
       }
 
     } else {
@@ -108,35 +142,35 @@ public:
     // Each block casts the stamtnet to that type then hands off the string building to a helper method defined below
     if( isa<IntegerLiteral>(Statment) ) {
       const IntegerLiteral *IL = dyn_cast_or_null<IntegerLiteral>(Statment);
-      llvm::outs() << GetNodeId(Statment) << " " << getIntegerLiteralNodeString(IL) << "\n";
+      DotFileWriter::WriteToFile(GetNodeId(Statment) + " " + getIntegerLiteralNodeString(IL) + "\n");
     } else if (isa<BinaryOperator>(Statment)) {
       const BinaryOperator *BO = dyn_cast_or_null<BinaryOperator>(Statment);
-      llvm::outs() << GetNodeId(Statment) << " " << getBinaryOperatorNodeString(BO) << "\n";
+      DotFileWriter::WriteToFile(GetNodeId(Statment) + " " + getBinaryOperatorNodeString(BO) + "\n");
     } else if (isa<IfStmt>(Statment)) {
       const IfStmt *IS = dyn_cast_or_null<IfStmt>(Statment);
-      llvm::outs() << GetNodeId(Statment) << " " << getIfStmtNodeString(IS) << "\n";
+      DotFileWriter::WriteToFile(GetNodeId(Statment) + " " + getIfStmtNodeString(IS) + "\n");
     } else if (isa<CompoundStmt>(Statment)) {
       const CompoundStmt *CS = dyn_cast_or_null<CompoundStmt>(Statment);
-      llvm::outs() << GetNodeId(Statment) << " " << getCompoundStmtNodeString(CS) << "\n";
+      DotFileWriter::WriteToFile(GetNodeId(Statment) + " " + getCompoundStmtNodeString(CS) + "\n");
     } else if (isa<DeclStmt>(Statment)) {
       const DeclStmt *DS = dyn_cast_or_null<DeclStmt>(Statment);
-      llvm::outs() << GetNodeId(Statment) << " " << getDeclStmtNodeString(DS) << "\n";
+      DotFileWriter::WriteToFile(GetNodeId(Statment) + " " + getDeclStmtNodeString(DS) + "\n");
     } else if (isa<DeclRefExpr>(Statment)) {
       const DeclRefExpr *DRE = dyn_cast_or_null<DeclRefExpr>(Statment);
-      llvm::outs() << GetNodeId(Statment) << " " << getDeclRefExprNodeString(DRE) << "\n";
+      DotFileWriter::WriteToFile(GetNodeId(Statment) + " " + getDeclRefExprNodeString(DRE) + "\n");
     } else if (isa<CallExpr>(Statment)) {
       const CallExpr *CE = dyn_cast_or_null<CallExpr>(Statment);
-      llvm::outs() << GetNodeId(Statment) << " " << getCallExprNodeString(CE) << "\n";
+      DotFileWriter::WriteToFile(GetNodeId(Statment) + " " + getCallExprNodeString(CE) + "\n");
     } else if (isa<ImplicitCastExpr>(Statment)) {
       const ImplicitCastExpr *ICE = dyn_cast_or_null<ImplicitCastExpr>(Statment);
       //Commented out beacuse the masters thesis doesnt seems to do anything with this?  Not sure why
-      //llvm::outs() << GetNodeId(Statment) << " " << getImplicitCastExprNodeString(ICE) << "\n";
+      //llvm::errs() << GetNodeId(Statment) << " " << getImplicitCastExprNodeString(ICE) << "\n";
     } else if (isa<ArraySubscriptExpr>(Statment)) {
       const ArraySubscriptExpr *ACE = dyn_cast_or_null<ArraySubscriptExpr>(Statment);
-      llvm::outs() << GetNodeId(Statment) << " " << getArraySubscriptExprNodeString(ACE) << "\n";
+      DotFileWriter::WriteToFile(GetNodeId(Statment) + " " + getArraySubscriptExprNodeString(ACE) + "\n");
     }
     else {
-      llvm::errs() << "Visiting an unhandled Decl " << Statment->getStmtClassName() << "\n";
+      llvm::errs() << "Visiting unhandeled Stmt " << Statment->getStmtClassName() << "\n";
     }
     // Itterating through all of my children, and drawing the connections
     for (Stmt::child_range I = Statment->children(); I; ++I) {
@@ -146,7 +180,7 @@ public:
         }
         //llvm::errs() << "\t" << I->getStmtClassName() << "\n";
         if (GetNodeId(Statment) != GetNodeId(*I)) {
-          llvm::outs() << GetNodeId(Statment) << "->" << GetNodeId(*I) << ";\n";
+          DotFileWriter::WriteToFile(GetNodeId(Statment) + "->" + GetNodeId(*I) + ";\n");
         }
       }
     }
@@ -308,11 +342,11 @@ public:
 
 int main(int argc, char **argv) {
     //TODO make this not shitty and actually read in a file
-    llvm::outs() << "digraph unnamed { \n";
-    runToolOnCode(new CustomDotGeneratorAction, argv[1]);
-    llvm::outs() << "}\n";
+    if( argc >= 2 ) {
+      DotFileWriter::OpenFile(argv[2]);
+      DotFileWriter::WriteToFile( "digraph unnamed { \n");
+      //runToolOnCode(new CustomDotGeneratorAction, argv[1]);
 
-    if( argc > 0 ) {
       CompilerInstance compiler_instance;
       DiagnosticOptions diagnosticOptions;
       compiler_instance.createDiagnostics();
@@ -342,6 +376,9 @@ int main(int argc, char **argv) {
 
       clang::ParseAST(compiler_instance.getPreprocessor(), astConsumer, compiler_instance.getASTContext());
       compiler_instance.getDiagnosticClient().EndSourceFile();
+
+      DotFileWriter::WriteToFile("}\n");
+
     }
     return 0;
 }
