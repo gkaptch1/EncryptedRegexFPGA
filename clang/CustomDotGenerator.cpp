@@ -72,6 +72,11 @@ public:
       }
 
     } else {
+      //Things we dont care about are listed here
+      if(isa<TranslationUnitDecl>(Decloration)) {
+        //We dont want to print anything if we are considering a TranslationUnit
+        return true;
+      }
       // Mostly for debug purposes.  Making sure we didnt miss anything...
       llvm::errs() << "Visiting an unhandled Decl " << Decloration->getDeclKindName() << "\n";
     }
@@ -179,7 +184,7 @@ private:
       return "Decl:" + std::to_string(full_loc.getSpellingLineNumber()) + ":" + std::to_string(full_loc.getSpellingColumnNumber());
     }
     //For some reason we need this because the valid check fails on the first try
-    return "Decl l:c";
+    return "Decl:l:c";
   }
 
   std::string GetNodeName(Stmt *Statment) {
@@ -188,7 +193,7 @@ private:
       return "Stmt:" + std::to_string(full_loc.getSpellingLineNumber()) + ":" + std::to_string(full_loc.getSpellingColumnNumber());
     }
     //For some reason we need this because the valid check fails on the first try
-    return "Stmt l:c";
+    return "Stmt:l:c";
   }
 
   // ------------------------  The rest of the class in helped methods defining the strings we want to ouput into the dot file.
@@ -203,7 +208,8 @@ private:
 
   std::string getFunctionDeclNodeString(const FunctionDecl *FD) {
     std::string name = FD->getQualifiedNameAsString();
-    return "[ shape=record , label=\"FucntionDecl\" , name = \"" + name + "\" , type = \"RETURNTYPE\"];";
+    std::string returntype = FD->getReturnType().getAsString();
+    return "[ shape=record , label=\"FucntionDecl\" , name = \"" + name + "\" , type = \"" + returntype + "\"];";
   }
 
   std::string getVarDeclNodeString(const VarDecl *VD) {
