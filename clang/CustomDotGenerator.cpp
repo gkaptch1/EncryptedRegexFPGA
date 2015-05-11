@@ -38,7 +38,6 @@ public:
     if (node_map.find(GetNodeName(Decloration)) == node_map.end()) {
       InsertNode(Decloration);
     }
-    //llvm::errs() << "Visiting a Decl " << Decloration->getDeclKindName() << "\n";
     //If it is a Parameter Object, we handle its output
     if(isa<ParmVarDecl>(Decloration)) {
       const ParmVarDecl *PVD = dyn_cast_or_null<ParmVarDecl>(Decloration);
@@ -65,6 +64,13 @@ public:
         // TODO make sure we connect the function to the rest of the subgraph
         llvm::errs() << GetNodeId(Decloration) << "->" << GetNodeId(*p) << ";\n";
       }
+      //Get the top level stmt node in the function body
+      if(FD->hasBody()) {
+        Stmt *Body = FD->getBody();
+        InsertNode(Body); 
+        llvm::errs() << GetNodeId(Decloration) << "->" << GetNodeId(Body) << ";\n";
+      }
+
     } else {
       // Mostly for debug purposes.  Making sure we didnt miss anything...
       llvm::errs() << "Visiting an unhandled Decl " << Decloration->getDeclKindName() << "\n";
