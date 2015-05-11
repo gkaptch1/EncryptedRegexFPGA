@@ -5,6 +5,22 @@
 #include "clang/Frontend/FrontendActions.h"
 #include "clang/Tooling/Tooling.h"
 #include "clang/Lex/Preprocessor.h"
+
+#include "llvm/Support/Host.h"
+#include "llvm/ADT/IntrusiveRefCntPtr.h"
+
+#include "clang/Basic/DiagnosticOptions.h"
+#include "clang/Frontend/TextDiagnosticPrinter.h"
+#include "clang/Basic/TargetOptions.h"
+#include "clang/Basic/TargetInfo.h"
+#include "clang/Basic/FileManager.h"
+#include "clang/Basic/SourceManager.h"
+#include "clang/Basic/Diagnostic.h"
+#include "clang/AST/ASTContext.h"
+#include "clang/Parse/Parser.h"
+#include "clang/Parse/ParseAST.h"
+
+
 #include <string>
 #include <unordered_map>
 
@@ -295,4 +311,36 @@ int main(int argc, char **argv) {
     llvm::errs() << "digraph unnamed { \n";
     runToolOnCode(new CustomDotGeneratorAction, argv[1]);
     llvm::errs() << "}\n";
+
+    if( argc > 0 ) {
+      CompilerInstance ci;
+      DiagnosticOptions diagnosticOptions;
+      ci.createDiagnostics();
+
+      // Initialize target info with the default triple for our platform.
+      auto TO = std::make_shared<TargetOptions>();
+      TO->Triple = llvm::sys::getDefaultTargetTriple();
+      TargetInfo *TI =
+          TargetInfo::CreateTargetInfo(ci.getDiagnostics(), TO);
+      ci.setTarget(TI);
+
+      ci.createFileManager();
+      ci.createSourceManager(ci.getFileManager());
+      ci.createPreprocessor(clang::TU_Complete);
+      ci.getPreprocessorOpts().UsePredefines = false;
+      ci.createASTContext();
+      CustomDotGeneratorConsumer *astConsumer = new CustomDotGeneratorConsumer(&ci.getASTContext());
+      ci.setASTConsumer(std::unique_ptr<ASTConsumer>(astConsumer));
+
+      // Set the main file handled by the source manager to the input file.
+      const FileEntry *FileIn = ci.getFileManager().getFile(argv[1]);
+      ci.getSourceManager().setMainFileID(
+        ci.getSourceManager().createFileID(FileIn, SourceLocation(), SrcMgr::C_User));
+      ci.getDiagnosticClient().BeginSourceFile(
+        ci.getLangOpts(), &ci.getPreprocessor());
+
+      clang::ParseAST(ci.getPreprocessor(), astConsumer, ci.getASTContext());
+      ci.getDiagnosticClient().EndSourceFile();
+    }
+    return 0;
 }
