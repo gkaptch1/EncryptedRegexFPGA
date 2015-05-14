@@ -19,29 +19,63 @@
 #include "clang/AST/ASTContext.h"
 #include "clang/Parse/Parser.h"
 #include "clang/Parse/ParseAST.h"
-#include "clang/Basic/LangOptions.h"
 
 
 #include <string>
 #include <unordered_map>
+//#include <iostream>
+//#include <fstream>
 
 using namespace clang;
 using namespace clang::tooling;
 
 //Class used to generate the node ID's for the dot file.
 class NodeIDGenerator {
-private:
-  static int id;
-
 public:
   static int getNextID() 
   {
     return id++;
   }
+
+private:
+  static int id;
 };
 
 //First node ID is 1000
 int NodeIDGenerator::id = 1000;
+
+class DotFileWriter {
+public:
+  static bool OpenFile(std::string file_name) {
+    if (file_open) {
+      return false;
+    }
+   // output_file.open(file_name);
+    return true;
+  }
+
+  static bool WriteToFile(std::string to_wrtie) {
+    if (!file_open) {
+      return false;
+    }
+  //  output_file << to_wrtie;
+    return true;
+  }
+
+  static bool CloseFile() {
+    if (!file_open) {
+      return false;
+    }
+//    output_file.close();
+    return true;
+  }
+private:
+  static bool file_open;
+//  static std::ofstream output_file;
+
+};
+
+// bool DotFileWriter::file_open = false;
 
 class CustomDotGeneratorVisitor 
   : public RecursiveASTVisitor<CustomDotGeneratorVisitor> {
@@ -58,35 +92,33 @@ public:
     //If it is a Parameter Object, we handle its output
     if(isa<ParmVarDecl>(Decloration)) {
       const ParmVarDecl *PVD = dyn_cast_or_null<ParmVarDecl>(Decloration);
-      llvm::outs() << GetNodeId(Decloration) << " " << getParmVarDeclNodeString(PVD) << "\n";
+      DotFileWriter::WriteToFile(GetNodeId(Decloration) + " " + getParmVarDeclNodeString(PVD) + "\n");
 
     }
     //if it s just a variable decl that isnt a parameter...
     else if(isa<VarDecl>(Decloration)) {
       const VarDecl *VD = dyn_cast_or_null<VarDecl>(Decloration);
-      llvm::outs() << GetNodeId(Decloration) << " " << getVarDeclNodeString(VD) << "\n";
-    } 
+      DotFileWriter::WriteToFile(GetNodeId(Decloration) + " " + getVarDeclNodeString(VD) + "\n");
+    }
     //Functions point downward in the digraph to a bunch of nodes.  We itterate through them and draw the connections
     else if(isa<FunctionDecl>(Decloration)) {
       const FunctionDecl *FD = dyn_cast_or_null<FunctionDecl>(Decloration);
-      llvm::outs() << GetNodeId(Decloration) << " " <<  getFunctionDeclNodeString(FD) << "\n";
+      DotFileWriter::WriteToFile(GetNodeId(Decloration) + " " +  getFunctionDeclNodeString(FD) + "\n");
       // Gater the params as an ArrayRef
       ArrayRef<ParmVarDecl * > params = FD->parameters();
       //Itterating through...
       for(auto p = params.begin(); p != params.end(); ++p) {
         //Insert the node if it doesnt exist yet.
-        //TODO figure out how to add #paragma's in here
         if (node_map.find(GetNodeName(*p)) == node_map.end()) {
           InsertNode(*p);
         }
-        // TODO make sure we connect the function to the rest of the subgraph
-        llvm::outs() << GetNodeId(Decloration) << " -> " << GetNodeId(*p) << ";\n";
+        DotFileWriter::WriteToFile(GetNodeId(Decloration) + "->" + GetNodeId(*p) + ";\n");
       }
       //Get the top level stmt node in the function body
       if(FD->hasBody()) {
         Stmt *Body = FD->getBody();
         InsertNode(Body); 
-        llvm::outs() << GetNodeId(Decloration) << " -> " << GetNodeId(Body) << ";\n";
+        DotFileWriter::WriteToFile(GetNodeId(Decloration) + "->" + GetNodeId(Body) + ";\n");
       }
 
     } else {
@@ -110,42 +142,35 @@ public:
     // Each block casts the stamtnet to that type then hands off the string building to a helper method defined below
     if( isa<IntegerLiteral>(Statment) ) {
       const IntegerLiteral *IL = dyn_cast_or_null<IntegerLiteral>(Statment);
-      llvm::outs() << GetNodeId(Statment) << " " << getIntegerLiteralNodeString(IL) << "\n";
+      DotFileWriter::WriteToFile(GetNodeId(Statment) + " " + getIntegerLiteralNodeString(IL) + "\n");
     } else if (isa<BinaryOperator>(Statment)) {
       const BinaryOperator *BO = dyn_cast_or_null<BinaryOperator>(Statment);
-      llvm::outs() << GetNodeId(Statment) << " " << getBinaryOperatorNodeString(BO) << "\n";
+      DotFileWriter::WriteToFile(GetNodeId(Statment) + " " + getBinaryOperatorNodeString(BO) + "\n");
     } else if (isa<IfStmt>(Statment)) {
       const IfStmt *IS = dyn_cast_or_null<IfStmt>(Statment);
-      llvm::outs() << GetNodeId(Statment) << " " << getIfStmtNodeString(IS) << "\n";
+      DotFileWriter::WriteToFile(GetNodeId(Statment) + " " + getIfStmtNodeString(IS) + "\n");
     } else if (isa<CompoundStmt>(Statment)) {
       const CompoundStmt *CS = dyn_cast_or_null<CompoundStmt>(Statment);
-      llvm::outs() << GetNodeId(Statment) << " " << getCompoundStmtNodeString(CS) << "\n";
+      DotFileWriter::WriteToFile(GetNodeId(Statment) + " " + getCompoundStmtNodeString(CS) + "\n");
     } else if (isa<DeclStmt>(Statment)) {
       const DeclStmt *DS = dyn_cast_or_null<DeclStmt>(Statment);
-      llvm::outs() << GetNodeId(Statment) << " " << getDeclStmtNodeString(DS) << "\n";
+      DotFileWriter::WriteToFile(GetNodeId(Statment) + " " + getDeclStmtNodeString(DS) + "\n");
     } else if (isa<DeclRefExpr>(Statment)) {
       const DeclRefExpr *DRE = dyn_cast_or_null<DeclRefExpr>(Statment);
-      llvm::outs() << GetNodeId(Statment) << " " << getDeclRefExprNodeString(DRE) << "\n";
+      DotFileWriter::WriteToFile(GetNodeId(Statment) + " " + getDeclRefExprNodeString(DRE) + "\n");
     } else if (isa<CallExpr>(Statment)) {
       const CallExpr *CE = dyn_cast_or_null<CallExpr>(Statment);
-      llvm::outs() << GetNodeId(Statment) << " " << getCallExprNodeString(CE) << "\n";
+      DotFileWriter::WriteToFile(GetNodeId(Statment) + " " + getCallExprNodeString(CE) + "\n");
     } else if (isa<ImplicitCastExpr>(Statment)) {
       const ImplicitCastExpr *ICE = dyn_cast_or_null<ImplicitCastExpr>(Statment);
       //Commented out beacuse the masters thesis doesnt seems to do anything with this?  Not sure why
-      //llvm::outs() << GetNodeId(Statment) << " " << getImplicitCastExprNodeString(ICE) << "\n";
+      //llvm::errs() << GetNodeId(Statment) << " " << getImplicitCastExprNodeString(ICE) << "\n";
     } else if (isa<ArraySubscriptExpr>(Statment)) {
       const ArraySubscriptExpr *ACE = dyn_cast_or_null<ArraySubscriptExpr>(Statment);
-      llvm::outs() << GetNodeId(Statment) << " " << getArraySubscriptExprNodeString(ACE) << "\n";
-    } else if (isa<UnaryOperator>(Statment)) {
-      const UnaryOperator *UO = dyn_cast_or_null<UnaryOperator>(Statment);
-      llvm::outs() << GetNodeId(Statment) << " " << getUniaryOperatorNodeString(UO) << "\n";
-    } else if (isa<ForStmt>(Statment)) {
-      const ForStmt *FS = dyn_cast_or_null<ForStmt>(Statment);
-      llvm::outs() << GetNodeId(Statment) << " " << getForStmtNodeString(FS) << "\n";
-      //Print out the body and bounds of the For Stmt
-
-    } else {
-      llvm::errs() << "Visiting an unhandled Stmt " << Statment->getStmtClassName() << "\n";
+      DotFileWriter::WriteToFile(GetNodeId(Statment) + " " + getArraySubscriptExprNodeString(ACE) + "\n");
+    }
+    else {
+      llvm::errs() << "Visiting unhandeled Stmt " << Statment->getStmtClassName() << "\n";
     }
     // Itterating through all of my children, and drawing the connections
     for (Stmt::child_range I = Statment->children(); I; ++I) {
@@ -155,7 +180,7 @@ public:
         }
         //llvm::errs() << "\t" << I->getStmtClassName() << "\n";
         if (GetNodeId(Statment) != GetNodeId(*I)) {
-          llvm::outs() << GetNodeId(Statment) << " -> " << GetNodeId(*I) << ";\n";
+          DotFileWriter::WriteToFile(GetNodeId(Statment) + "->" + GetNodeId(*I) + ";\n");
         }
       }
     }
@@ -228,32 +253,32 @@ private:
   std::string getParmVarDeclNodeString(const ParmVarDecl *PVD) {
     std::string name = PVD->getDeclName().getAsString();
     std::string type = PVD->getType().getAsString();
-    return "[ shape=record , label=\"ParmVarDecl\" , name=\"" + name + "\" , type=\"" + type + "\"];";
+    return "[ shape=record , label=\"ParmVarDecl\" , name = \"" + name + "\" , type = \"" + type + "\"];";
   }
 
   std::string getFunctionDeclNodeString(const FunctionDecl *FD) {
     std::string name = FD->getQualifiedNameAsString();
     std::string returntype = FD->getReturnType().getAsString();
-    return "[ shape=record , label=\"FucntionDecl\" , name=\"" + name + "\" , type=\"" + returntype + "\"];";
+    return "[ shape=record , label=\"FucntionDecl\" , name = \"" + name + "\" , type = \"" + returntype + "\"];";
   }
 
   std::string getVarDeclNodeString(const VarDecl *VD) {
     std::string name = VD->getDeclName().getAsString();
     std::string type = VD->getType().getAsString();
     //std::string value = std::to_string(VD->evaluateValue());
-    return "[ shape=record , label=\"VarDecl\" , name=\"" + name + "\" , type=\"" + type + "\" , value=\"VALUE\" ];";
+    return "[ shape=record , label=\"VarDecl\" , name = \"" + name + "\" , type = \"" + type + "\" , value = \"VALUE\" ];";
   }
 
   //--------------------------- For Statments 
 
   std::string getIntegerLiteralNodeString(const IntegerLiteral *IL) {
     std::string value = std::to_string( (int) (IL->getValue()).bitsToDouble());
-    return "[ shape=record , label=\"IntegerLiteral\" , value=\"" + value + "\"];";
+    return "[ shape=record , label=\"IntegerLiteral\" , value = \"" + value + "\"];";
   }
 
   std::string getBinaryOperatorNodeString(const BinaryOperator *BO) {
     std::string value = BO->getOpcodeStr();
-    return "[ shape=record , label=\"BinaryOperator\" , value=\"" + value + "\"];";
+    return "[ shape=record , label=\"BinaryOperator\" , value = \"" + value + "\"];";
   }
 
   std::string getCompoundStmtNodeString(const CompoundStmt *CS) {
@@ -270,7 +295,7 @@ private:
 
   std::string getDeclRefExprNodeString(const DeclRefExpr *DRE) {
     std::string name = (DRE->getNameInfo()).getAsString();
-    return "[ shape=record , label=\"DeclRefExpr\" , name=\"" + name + "\"];";  
+    return "[ shape=record , label=\"DeclRefExpr\" , name = \"" + name + "\"];";  
   }
 
   std::string getCallExprNodeString(const CallExpr *CE) {
@@ -284,16 +309,6 @@ private:
 
   std::string getArraySubscriptExprNodeString(const ArraySubscriptExpr *ACE) {
     return "[ shape=record , label=\"ArraySubscriptExpr\" ];";
-  }
-
-  std::string getForStmtNodeString(const ForStmt *FS) {
-    return "[ shape=record , label=\"ForStmt\" ];";
-  }
-
-  
-  std::string getUniaryOperatorNodeString(const UnaryOperator *UO) {
-    std::string value = UnaryOperator::getOpcodeStr(UO->getOpcode());
-    return "[ shape=record , label=\"UnaryOperator\" , value=\"" + value + "\"];";
   }
 
 };
@@ -324,21 +339,14 @@ public:
   }
 };
 
-class CustomPreprocessor : public clang::Preprocessor {
-public:
-
-
-private:
-
-};
-
 
 int main(int argc, char **argv) {
     //TODO make this not shitty and actually read in a file
-    llvm::outs() << "digraph unnamed { \n";
-    //runToolOnCode(new CustomDotGeneratorAction, argv[1]);
+    if( argc >= 2 ) {
+      DotFileWriter::OpenFile(argv[2]);
+      DotFileWriter::WriteToFile( "digraph unnamed { \n");
+      //runToolOnCode(new CustomDotGeneratorAction, argv[1]);
 
-    if( argc > 0 ) {
       CompilerInstance compiler_instance;
       DiagnosticOptions diagnosticOptions;
       compiler_instance.createDiagnostics();
@@ -368,9 +376,9 @@ int main(int argc, char **argv) {
 
       clang::ParseAST(compiler_instance.getPreprocessor(), astConsumer, compiler_instance.getASTContext());
       compiler_instance.getDiagnosticClient().EndSourceFile();
+
+      DotFileWriter::WriteToFile("}\n");
+
     }
-
-    llvm::outs() << "}\n";
-
     return 0;
 }

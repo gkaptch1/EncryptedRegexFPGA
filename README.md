@@ -53,4 +53,7 @@ To get complilation of the tool working, build LLVM/Clang with ninja, place the 
 from llvm_build to build the executable
 
 
-./bin/custom-dot-gen 'int get_global_id(int a); void VectorAdd( const long * a, const long * b, long * c,int iNumElements) { int tGID = get_global_id(0); if ( tGID < iNumElements ) { c[tGID] = a[tGID] + b[tGID];}}'
+Some Useful aliases for dev:
+
+$alias customdotgen=$LLVM_BUILD/bin/custom-dot-gen
+$alias compile_customdotget='cd $LLVM_BUILD && ninja custom-dot-get && cd -'
