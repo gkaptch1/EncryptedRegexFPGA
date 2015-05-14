@@ -76,6 +76,7 @@ public:
   }
 };
 
+
 class CustomTokenDumperAction : public clang::PreprocessorFrontendAction {
 protected:
   virtual void ExecuteAction() {
@@ -104,15 +105,6 @@ protected:
      //llvm::errs() << "\n";
      RawLex.LexFromRawLexer(RawTok);
    }
-
-   //TODO FIGURE OUT HOW TO PASS THIS TO THE AST PARSER!! 
-   /*
-   raw_ostream *OS = CI.createDefaultOutputFile(false, getCurrentFile());
-   if (!OS) return;
- 
-   DoPrintPreprocessedInput(CI.getPreprocessor(), OS,
-                            CI.getPreprocessorOutputOpts());
-                            */
   }
 };
 
@@ -123,6 +115,6 @@ int main(int argc, char **argv) {
     //ClangTool Tool(op.getCompilations(), op.getSourcePathList());
     //int result = Tool.run(newFrontendActionFactory<CustomTokenDumperAction>());
     //runToolOnCode(new ASTDumpAction, argv[1]);
-    runToolOnCode(new ASTViewAction, argv[1]);
+    runToolOnCode(new FindNamedClassAction, argv[1]);
     //rewriter.getEditBuffer(rewriter.getSourceMgr().getMainFileID()).write(errs());
 }
