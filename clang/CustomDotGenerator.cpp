@@ -28,7 +28,7 @@ public:
 
 
 void CustomDotGeneratorConsumer::HandleTopLevelSingleDecl(Decl *D) {
-	//TODO Limits the things we are actually priniting to methods and functions...
+	//TODO Limits the things we are actually printing to methods and functions...
   if (isa<FunctionDecl>(D) || isa<ObjCMethodDecl>(D)) {
     D->print(llvm::errs());
   
