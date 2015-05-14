@@ -205,7 +205,7 @@ private:
   std::string GetNodeName(Decl *Decloration) {
     FullSourceLoc full_loc = Context->getFullLoc((Decloration)->getLocStart());
     if (full_loc.isValid()) {
-      return "Decl:" + std::to_string(full_loc.getSpellingLineNumber()) + ":" + std::to_string(full_loc.getSpellingColumnNumber());
+      return "Decl:" + std::string(Decloration->getDeclKindName()) + ":" + std::to_string(full_loc.getSpellingLineNumber()) + ":" + std::to_string(full_loc.getSpellingColumnNumber());
     }
     //For some reason we need this because the valid check fails on the first try
     return "Decl:l:c";
@@ -214,7 +214,7 @@ private:
   std::string GetNodeName(Stmt *Statment) {
     FullSourceLoc full_loc = Context->getFullLoc((Statment)->getLocStart());
     if (full_loc.isValid()) {
-      return "Stmt:" + std::to_string(full_loc.getSpellingLineNumber()) + ":" + std::to_string(full_loc.getSpellingColumnNumber());
+      return "Stmt:" + std::string(Statment->getStmtClassName()) + ":" + std::to_string(full_loc.getSpellingLineNumber()) + ":" + std::to_string(full_loc.getSpellingColumnNumber());
     }
     //For some reason we need this because the valid check fails on the first try
     return "Stmt:l:c";
