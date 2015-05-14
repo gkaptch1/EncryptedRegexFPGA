@@ -51,9 +51,21 @@ public:
 
   bool VisitDecl(Decl *Decloration) {
 
+<<<<<<< HEAD
+void CustomDotGeneratorConsumer::HandleTopLevelSingleDecl(Decl *D) {
+	//TODO Limits the things we are actually printing to methods and functions...
+  if (isa<FunctionDecl>(D) || isa<ObjCMethodDecl>(D)) {
+    D->print(llvm::errs());
+  
+    if (Stmt *Body = D->getBody()) {
+      llvm::errs() << '\n';
+      Body->viewAST();
+      llvm::errs() << '\n';
+=======
     //If we are visiting something that somehow isnt in the digraph yet, we insert it
     if (node_map.find(GetNodeName(Decloration)) == node_map.end()) {
       InsertNode(Decloration);
+>>>>>>> 7227293db4325ba324591a6d1c9979393910962b
     }
     //If it is a Parameter Object, we handle its output
     if(isa<ParmVarDecl>(Decloration)) {
