@@ -96,6 +96,8 @@ public:
       }
       // Mostly for debug purposes.  Making sure we didnt miss anything...
       llvm::errs() << "Visiting an unhandled Decl " << Decloration->getDeclKindName() << "\n";
+      llvm::outs() << GetNodeId(Decloration) << " " << getUnhandledNodeString(Decloration) << "\n";
+
     }
     return true;
   }
@@ -145,6 +147,7 @@ public:
 
     } else {
       llvm::errs() << "Visiting an unhandled Stmt " << Statment->getStmtClassName() << "\n";
+      llvm::outs() << GetNodeId(Statment) << " " << getUnhandledNodeString(Statment) << "\n";
     }
     // Itterating through all of my children, and drawing the connections
     for (Stmt::child_range I = Statment->children(); I; ++I) {
@@ -292,6 +295,18 @@ private:
   std::string getUniaryOperatorNodeString(const UnaryOperator *UO) {
     std::string value = UnaryOperator::getOpcodeStr(UO->getOpcode());
     return "[ shape=record , label=\"UnaryOperator\" , value=\"" + value + "\"];";
+  }
+
+  // ------------------- For stuff that isnt handled explicitly
+
+  std::string getUnhandledNodeString(Stmt *Statment) {
+    std::string label = Statment->getStmtClassName();
+    return "[ shape=record , label=\"" +label +"\" ];";
+  }
+
+  std::string getUnhandledNodeString(Decl *Decloration) {
+    std::string label = Decloration->getDeclKindName();
+    return "[ shape=record , label=\"" +label +"\" ];";
   }
 
 };
