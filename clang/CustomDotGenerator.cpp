@@ -131,7 +131,7 @@ public:
     } else if (isa<ImplicitCastExpr>(Statment)) {
       const ImplicitCastExpr *ICE = dyn_cast_or_null<ImplicitCastExpr>(Statment);
       //Commented out beacuse the masters thesis doesnt seems to do anything with this?  Not sure why
-      //llvm::outs() << GetNodeId(Statment) << " " << getImplicitCastExprNodeString(ICE) << "\n";
+      llvm::outs() << GetNodeId(Statment) << " " << getImplicitCastExprNodeString(ICE) << "\n";
     } else if (isa<ArraySubscriptExpr>(Statment)) {
       const ArraySubscriptExpr *ACE = dyn_cast_or_null<ArraySubscriptExpr>(Statment);
       llvm::outs() << GetNodeId(Statment) << " " << getArraySubscriptExprNodeString(ACE) << "\n";
@@ -277,8 +277,7 @@ private:
   }
 
   std::string getImplicitCastExprNodeString(const ImplicitCastExpr *ICE) {
-    //Not sure why this is nothing...
-    return "";
+    return "[ shape=record, label=\"ImplicitCastExpr\"];";
   }
 
   std::string getArraySubscriptExprNodeString(const ArraySubscriptExpr *ACE) {
